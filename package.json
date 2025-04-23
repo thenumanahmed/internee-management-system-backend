@@ -1,0 +1,27 @@
+{
+  "name": "llmsiifa-backend",
+  "version": "1.0.0",
+  "description": "llms",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EhtishamNazir1234/LLMSIIFA-Backend.git"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "ehtisham",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EhtishamNazir1234/LLMSIIFA-Backend/issues"
+  },
+  "homepage": "https://github.com/EhtishamNazir1234/LLMSIIFA-Backend#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10"
+  }
+}
