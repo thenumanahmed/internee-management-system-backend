@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
+const { emailTemplate } = require('../utils/emailTemplate');
 
-const sendEmail = async ({ to, subject, text }) => {
+const sendEmail = async ({ to, subject, name, email, plainPassword, role }) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -9,13 +10,16 @@ const sendEmail = async ({ to, subject, text }) => {
         }
     });
 
+    const html = emailTemplate({ name, email, plainPassword , role});
+
     await transporter.sendMail({
         from: `"No Reply" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        text
+        html
     });
-    console.log(`Email sent to ${to} with subject "${subject}" and text "${text}"`);
+
+    // console.log(`Email sent to ${to} with subject "${subject}"`);
 };
 
 module.exports = sendEmail;

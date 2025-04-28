@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
         default: 'internee',
         required: true
     },
-    isVerified: { type: Boolean, default: false },
     invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' ,default: null },
 }, { timestamps: true });
 

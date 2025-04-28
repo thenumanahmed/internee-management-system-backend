@@ -29,7 +29,7 @@ const registerAdmin = async (req, res) => {
 };
 
 const inviteUser = async (req, res) => {
-  const { name, email, invitedBy } = req.body;
+  const { name, email, invitedBy, role } = req.body;
 
   try {
     // Check if user already exists
@@ -46,7 +46,7 @@ const inviteUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: 'internee',
+      role, // role can be 'teamLead' or 'internee'
       invitedBy
     });
 
@@ -54,9 +54,12 @@ const inviteUser = async (req, res) => {
 
     // Send email with plain password
     await sendEmail({
-      to: "numanahmedmail@gmail.com",
-      subject: 'Your TeamLead Account Credentials',
-      text: `Hello ${name},\n\nYour account has been created.\nEmail: ${email}\nPassword: ${plainPassword}\n\nPlease login and change your password.`,
+      to: to,
+      subject: 'Your IIFA Tech Account Credentials',
+      name,
+      email,
+      plainPassword,
+      role,
     });
 
     user.password = undefined; // Remove password from response
@@ -82,7 +85,7 @@ const loginAdmin = async (req, res) => {
 
     const token = generateToken(user);
     // login successfull
-    res.status(200).json({ token });
+    res.status(200).json({ token, user });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -100,7 +103,7 @@ const loginTeamLead = async (req, res) => {
 
     const token = generateToken(user);
     // login successfull
-    res.status(200).json({ token });
+    res.status(200).json({ token, user });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -118,7 +121,7 @@ const loginInternee = async (req, res) => {
 
     const token = generateToken(user);
     // login successfull
-    res.status(200).json({ token });
+    res.status(200).json({ token, user });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
