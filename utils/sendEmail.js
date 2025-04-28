@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
+const { inviteEmailTemplate , otpEmailTemplate} = require('./emailTemplates');
 
-const sendEmail = async ({ to, subject, text }) => {
+const sendInviteEmail = async ({ to, subject, name, email, plainPassword, role }) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -9,13 +10,37 @@ const sendEmail = async ({ to, subject, text }) => {
         }
     });
 
+    const inviteTemplate = inviteEmailTemplate({ name, email, plainPassword, role });
+
     await transporter.sendMail({
         from: `"No Reply" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        text
+        html:inviteTemplate
     });
-    console.log(`Email sent to ${to} with subject "${subject}" and text "${text}"`);
+
+    console.log(`Email sent to ${to} with subject "${subject} ${inviteTemplate}"`);
 };
 
-module.exports = sendEmail;
+const sendOTPEmail = async ({ to, subject, name, otp }) => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+
+    const otpTemplate = otpEmailTemplate({ name, otp });
+
+    await transporter.sendMail({
+        from: `"No Reply" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html: otpTemplate
+    });
+
+    // console.log(`OTP email sent to ${to} with subject "${subject}"`);
+};
+
+module.exports = { sendOTPEmail, sendInviteEmail };
