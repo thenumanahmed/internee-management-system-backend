@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { registerAdmin, loginAdmin, inviteUser, loginInternee, loginTeamLead } = require('../controllers/authController');
+const { signUp, login, inviteUser, forgotPassword, resetPassword, verifyOtp } = require('../controllers/authController.js');
 const { protect } = require('../middlewares/authMiddleware');
 
-router.post('/admin/signup', registerAdmin);
-router.post('/admin/login', loginAdmin);
+// router.post('/admin/signup', signUp);
+router.post('/login', login);
+router.post('/forgot-pass', forgotPassword);
+router.post('/verify-otp', verifyOtp);
+router.put('/reset-pass', resetPassword);
 
 router.post('/invite-user', protect('admin', 'teamLead'), inviteUser);
-
-// router.post('/teamLead/signup', registerTeamLead); // not implemented yet
-router.post('/teamLead/login', loginTeamLead);
-
-// router.post('/signup', registerInternee); // not implemented yet
-router.post('/login', loginInternee);
 
 module.exports = router;

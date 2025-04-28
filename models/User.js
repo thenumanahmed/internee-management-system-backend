@@ -7,11 +7,18 @@ const userSchema = new mongoose.Schema({
     image: { type: String, default: null },
     role: {
         type: String,
-        enum: ['admin', 'teamLead', 'internee'],
-        default: 'internee',
-        required: true
+        enum: ['superAdmin', 'admin', 'teamLead', 'internee'],
+        default: 'internee'
     },
-    invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' ,default: null },
+    techStack: Array,
+    invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    resetPasswordOTP: { type: String },
+    resetPasswordOTPExpire: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordTokenExpire: { type: Date },
+
 }, { timestamps: true });
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema)
+module.exports = User

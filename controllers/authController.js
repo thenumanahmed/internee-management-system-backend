@@ -1,13 +1,11 @@
-
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-
-const User = require('../models/User');
+const User = require('../models/User.js');
 const generateToken = require('../utils/generateToken');
-const sendEmail = require('../utils/sendEmail');
+const { sendInviteEmail, sendOTPEmail } = require('../utils/sendEmail');
 
-const registerAdmin = async (req, res) => {
-  const { name, email, password } = req.body;
+const signUp = async (req, res) => {
+  const { name, email, password, role } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -16,7 +14,7 @@ const registerAdmin = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    user = new User({ name, email, password: hashedPassword, role: 'admin' });
+    user = new User({ name, email, password: hashedPassword, role });
     await user.save();
 
     const token = generateToken(user);
@@ -29,7 +27,7 @@ const registerAdmin = async (req, res) => {
 };
 
 const inviteUser = async (req, res) => {
-  const { name, email, invitedBy, role } = req.body;
+  const { name, email, role } = req.body;
 
   try {
     // Check if user already exists
@@ -46,15 +44,15 @@ const inviteUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role, // role can be 'teamLead' or 'internee'
-      invitedBy
+      role,
+      invitedBy: req.user._id
     });
 
     await user.save();
 
     // Send email with plain password
-    await sendEmail({
-      to: to,
+    await sendInviteEmail({
+      to: "numanahmedmail@gmail.com",
       subject: 'Your IIFA Tech Account Credentials',
       name,
       email,
@@ -73,12 +71,12 @@ const inviteUser = async (req, res) => {
   }
 }
 
-const loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
+const login = async (req, res) => {
+  const { email, password, role } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user || user.role !== 'admin') return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user || user.role !== role) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
@@ -91,40 +89,129 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-const loginTeamLead = async (req, res) => {
-  const { email, password } = req.body;
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user || user.role !== 'teamLead') return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+    // Generate 6 digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const token = generateToken(user);
-    // login successfull
-    res.status(200).json({ token, user });
-  } catch (err) {
+    // Save OTP and expiry (10 minutes later)
+    user.resetPasswordOTP = otp;
+    user.resetPasswordOTPExpire = Date.now() + 10000 * 60 * 1000; // 10 minutes
+    user.resetPasswordTokenExpire = undefined;
+    user.resetPasswordToken = undefined;
+
+    await user.save();
+
+    // Send email
+    await sendOTPEmail({
+      to: "numanahmedmail@gmail.com",
+      // to: user.email,
+      subject: 'Your Password Reset OTP',
+      name: user.name,
+      otp
+    });
+
+    res.status(200).json({ message: 'OTP sent to email successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+
+};
+
+
+const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check OTP and expiration
+    if (
+      String(user.resetPasswordOTP) !== String(otp) ||
+      !user.resetPasswordOTPExpire ||
+      user.resetPasswordOTPExpire < Date.now()
+    ) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+    // OTP verified → generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordTokenExpire = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+    // Clear OTP after successful verification
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'OTP verified successfully.',
+      resetToken
+    });
+
+  } catch (error) {
+    console.error('Error in verifyOtp:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-const loginInternee = async (req, res) => {
-  const { email, password } = req.body;
+
+
+const resetPassword = async (req, res) => {
+  const { email, resetToken, newPassword } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user || user.role !== 'internee') return res.status(401).json({ message: 'Invalid credentials' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    console.log(user)
 
-    const token = generateToken(user);
-    // login successfull
-    res.status(200).json({ token, user });
-  } catch (err) {
+    // Validate reset token
+    if (
+      String(user.resetPasswordToken) !== String(resetToken) ||
+      !user.resetPasswordTokenExpire ||
+      user.resetPasswordTokenExpire < Date.now()
+    ) {
+      return res.status(400).json({ message: 'Invalid or expired reset token.' });
+    }
+
+    // Reset password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear reset token fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successful. You can now login.' });
+
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-module.exports = { registerAdmin, loginAdmin, loginTeamLead, loginInternee, inviteUser };
+module.exports = {
+  signUp,
+  login,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
+  inviteUser
+}
