@@ -100,6 +100,14 @@ const login = async (req, res) => {
   }
 };
 
+const logout = (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+  });
+
+  res.status(200).json({ message: 'Logout successful' });
+};
+
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -134,7 +142,6 @@ const forgotPassword = async (req, res) => {
   }
 
 };
-
 
 const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
@@ -178,8 +185,6 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-
-
 const resetPassword = async (req, res) => {
   const { email, resetToken, newPassword } = req.body;
 
@@ -217,131 +222,10 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// /////
-// export const forgotPasswordService = async (req, res) => {
-//   try {
-//     const email = req.body;
-//     const user = await User.findOne({
-//       where: { email },
-//     });
-
-//     if (!user) {
-//       throw { 
-//         status: 400, 
-//         message: "No user found with this email" 
-//       };
-//     }
-
-//     const otp = Math.floor(100000 + Math.random() * 900000);
-
-//     const token = generateTokenForgotPassword({
-//       otp,
-//       email,
-//       role: roleName, 
-//     });
-
-//     // Send OTP email
-//     await sendOtpEmail(email, otp);
-
-//     return {
-//       message: "OTP has been sent to your email address.",
-//       token,
-//     };
-//   } catch (error) {
-//     throw {
-//       status: error.status || 500,
-//       message: error.message || "Internal server error",
-//     };
-//   }
-// };
-// //Forgot Password Service End
-
-
-// // Verify Otp Service Start
-// export const verifyOtpService = async (email, otp, token) => {
-//   try {
-//     const decoded = verifyToken(token);
-
-//     if (decoded.email !== email) {
-//       throw { status: 400, message: "Email mismatch" };
-//     }
-
-//     if (decoded.otp !== Number(otp)) {
-//       throw { status: 400, message: "Invalid OTP" };
-//     }
-
-//     return {
-//       message: "OTP verified successfully",
-//     };
-//   } catch (error) {
-//     if (error.name === "TokenExpiredError") {
-//       throw { status: 400, message: "Request timeout" };
-//     }
-//     throw {
-//       status: error.status || 500,
-//       message: error.message || "Internal server error",
-//     };
-//   }
-// };
-// // Verify Otp Service End
-
-// //Reset Password Service Start
-// export const resetPasswordService = async (email, token, newPassword) => {
-//   try {
-//     const decoded = verifyToken(token);
-
-//     if (decoded.email !== email) {
-//       throw { status: 400, message: "Email mismatch" };
-//     }
-
-//     if (!decoded.role) {
-//       throw { status: 400, message: "Role information missing in token" };
-//     }
-
-//     const user = await User.findOne({
-//       where: { email },
-//       include: {
-//         model: Role,
-//         where: { name: decoded.role },
-//         through: { attributes: [] },
-//       },
-//     });
-
-//     if (!user) {
-//       throw { 
-//         status: 400, 
-//         message: "User not found with this email and role" 
-//       };
-//     }
-
-//     const hashedPassword = await bcrypt.hash(newPassword, 10);
-//     await user.update({
-//       password: hashedPassword,
-//     });
-
-//     return {
-//       message: "Password has been successfully reset",
-//       data: {
-//         email: user.email,
-//         role: decoded.role
-//       }
-//     };
-//   } catch (error) {
-//     if (error.name === "TokenExpiredError") {
-//       throw { status: 400, message: "Reset password link has expired" };
-//     }
-//     throw {
-//       status: error.status || 500,
-//       message: error.message || "Internal server error",
-//     };
-//   }
-// };
-
-
-
 module.exports = {
   signUp,
   login,
+  logout,
   forgotPassword,
   verifyOtp,
   resetPassword,

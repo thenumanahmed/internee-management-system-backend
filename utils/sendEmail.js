@@ -19,7 +19,7 @@ const sendInviteEmail = async ({ to, subject, name, email, plainPassword, role }
         html:inviteTemplate
     });
 
-    console.log(`Email sent to ${to} with subject "${subject} ${inviteTemplate}"`);
+    // console.log(`Email sent to ${to} with subject "${subject} ${inviteTemplate}"`);
 };
 
 const sendOTPEmail = async ({ to, subject, name, otp }) => {
