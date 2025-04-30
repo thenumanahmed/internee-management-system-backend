@@ -1,5 +1,8 @@
+const bcrypt = require('bcryptjs');
+
+const cloudinary = require('../config/cloudinary.js');
 const User = require("../models/User");
-const bcrypt = require('bcryptjs')
+const fs = require('fs')
 
 // Get all the users
 const getAllUsers = async (req, res) => {
@@ -33,10 +36,54 @@ const getAllUsers = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const user = req.user;
-        const updates = req.body.updatedData;
+        const updates = JSON.parse(req.body.updatedData); // Parse JSON if sent as string (from multipart/form-data)
+        const allowedFields = ['name', 'techStack'];
 
-        const allowedFields = ['name', 'image', 'techStack'];
+        // Upload image if file exists
+        if (req.files && req.files.image) {
+            const file = req.files.image;
 
+            // If user already has a profile image, delete it from Cloudinary
+            if (user.image) {
+                const publicId = user.image.split('/').pop().split('.')[0]; // Extract public_id from URL
+                try {
+                    await cloudinary.uploader.destroy(publicId); // Remove the old image from Cloudinary
+                    console.log('Previous image deleted successfully');
+                } catch (err) {
+                    console.error('Error deleting previous image:', err);
+                    return res.status(500).json({ message: 'Error deleting previous image from Cloudinary.' });
+                }
+            } else {
+                console.log("No previous image to delete.");
+            }
+
+            // Upload new image to Cloudinary
+            try {
+                const result = await cloudinary.uploader.upload(file.tempFilePath, {
+                    folder: 'user-profiles',
+                    public_id: `user_${user._id}_${Date.now()}`, // Unique public_id
+                    overwrite: true,
+                    resource_type: 'image', // Ensure it's treated as an image
+                });
+
+                // Update user image field with the new image URL
+                user.image = result.secure_url;
+
+                // Delete temp file
+                fs.unlink(file.tempFilePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting temp file:', err);
+                    } else {
+                        console.log('Temp file deleted');
+                    }
+                });
+            } catch (err) {
+                console.error('Error uploading new image:', err);
+                return res.status(500).json({ message: 'Error uploading new image to Cloudinary.' });
+            }
+        }
+
+        // Update other allowed fields
         Object.entries(updates).forEach(([key, value]) => {
             if (allowedFields.includes(key)) {
                 user[key] = value;
