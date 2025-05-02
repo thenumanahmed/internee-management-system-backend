@@ -20,6 +20,7 @@ app.use(fileUpload({
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/task', require('./routes/taskRoutes'));
 
 // error handling middleware
 app.use((err, req, res, next) => {
