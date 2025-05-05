@@ -2,7 +2,7 @@ const Task = require("../models/Task");
 const TUser = require("../models/User");
 
 // Submit a task (Internee)
-exports.submitTask = async (req, res) => {
+exports.submitTask = async(req, res) => {
     try {
         const { title, description, date } = req.body;
         const task = await Task.create({
@@ -18,12 +18,10 @@ exports.submitTask = async (req, res) => {
 };
 
 // Approve task (TeamLead)
-exports.approveTask = async (req, res) => {
+exports.approveTask = async(req, res) => {
     try {
         const task = await Task.findByIdAndUpdate(
-            req.params.taskId,
-            { status: 'approved' },
-            { new: true }
+            req.params.taskId, { status: 'approved' }, { new: true }
         );
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
         res.json({ success: true, task });
@@ -33,12 +31,10 @@ exports.approveTask = async (req, res) => {
 };
 
 // Reject task (TeamLead)
-exports.rejectTask = async (req, res) => {
+exports.rejectTask = async(req, res) => {
     try {
         const task = await Task.findByIdAndUpdate(
-            req.params.taskId,
-            { status: 'rejected', feedback: req.body.feedback || '' },
-            { new: true }
+            req.params.taskId, { status: 'rejected', feedback: req.body.feedback || '' }, { new: true }
         );
         if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
         res.json({ success: true, task });
@@ -48,7 +44,7 @@ exports.rejectTask = async (req, res) => {
 };
 
 // Get my tasks (Internee)
-exports.getMyTasks = async (req, res) => {
+exports.getMyTasks = async(req, res) => {
     try {
         const tasks = await Task.find({ submittedBy: req.user._id }).sort({ date: -1 });
         res.json({ success: true, tasks });
@@ -58,7 +54,7 @@ exports.getMyTasks = async (req, res) => {
 };
 
 // Get tasks of a specific user
-exports.getTasksByUser = async (req, res) => {
+exports.getTasksByUser = async(req, res) => {
     try {
         const tasks = await Task.find({ submittedBy: req.params.userId }).sort({ date: -1 });
         res.json({ success: true, tasks });
@@ -68,7 +64,7 @@ exports.getTasksByUser = async (req, res) => {
 };
 
 // Get all pending tasks
-exports.getPendingTasks = async (req, res) => {
+exports.getPendingTasks = async(req, res) => {
     try {
         const tasks = await Task.find({ status: 'pending' }).populate('submittedBy', 'name email');
         res.json({ success: true, tasks });
@@ -77,8 +73,24 @@ exports.getPendingTasks = async (req, res) => {
     }
 };
 
+// Edit task (Internee) - force status to pending
+exports.editTask = async(req, res) => {
+    try {
+        const { title, description, date } = req.body;
+
+        // Only allow task editing if it belongs to the logged-in user
+        const task = await Task.findOneAndUpdate({ _id: req.params.taskId, submittedBy: req.user._id }, { title, description, date, status: 'pending' }, { new: true });
+
+        if (!task) return res.status(404).json({ success: false, message: 'Task not found or unauthorized' });
+
+        res.status(200).json({ success: true, task });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // Get all tasks (Admin/SuperAdmin)
-exports.getAllTasks = async (req, res) => {
+exports.getAllTasks = async(req, res) => {
     try {
         const tasks = await Task.find().populate('submittedBy', 'name email');
         res.json({ success: true, tasks });

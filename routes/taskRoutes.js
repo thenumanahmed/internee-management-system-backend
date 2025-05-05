@@ -7,6 +7,7 @@ const {
     rejectTask,
     getMyTasks,
     getAllTasks,
+    editTask,
 } = require('../controllers/taskController');
 const { getTasksByUser } = require('../controllers/taskController');
 const { getPendingTasks } = require('../controllers/taskController');
@@ -28,5 +29,7 @@ router.get('/user/:userId', isAuthenticated, authorizeRoles('admin', 'superAdmin
 // Get all pending tasks
 router.get('/pending', isAuthenticated, authorizeRoles('admin', 'superAdmin', 'teamLead'), getPendingTasks);
 
+// Internee — Edit own task (status will reset to pending)
+router.put('/edit/:taskId', isAuthenticated, editTask);
 
 module.exports = router;
