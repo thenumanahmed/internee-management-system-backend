@@ -5,6 +5,13 @@ const fileUpload = require('express-fileupload');
 
 const connectDB = require('./config/db');
 
+const authRoutes = require('./routes/authRoutes')
+const userRoutes = require('./routes/userRoutes')
+const adminRoutes = require('./routes/adminRoutes')
+const progressRoutes = require('./routes/progressRoutes')
+const techStackRoutes = require('./routes/techStackRoutes')
+const moduleRoutes = require('./routes/moduleRoutes')
+
 dotenv.config();
 connectDB();
 
@@ -17,12 +24,17 @@ app.use(fileUpload({
     tempFileDir: '/tmp/'
 }));
 
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/task', require('./routes/taskRoutes'));
-app.use('/api/courses', require('./routes/courseRoutes'));
-app.use('/api/progress', require('./routes/progressRoutes'));
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/techstack', techStackRoutes);
+app.use('/api/module', moduleRoutes);
+
+// unknown route handler
+app.use((req, res, next) => {
+    res.status(404).json({ message: 'Route not found' });
+});
 
 // error handling middleware
 app.use((err, req, res, next) => {
