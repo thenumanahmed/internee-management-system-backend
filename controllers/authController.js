@@ -5,8 +5,9 @@ const User = require('../models/User.js');
 const generateToken = require('../utils/generateToken');
 const { sendInviteEmail, sendOTPEmail } = require('../utils/sendEmail');
 const Progress = require('../models/Progress');
+const { assignModulesToTheUser } = require('./userController.js');
 
-const signUp = async(req, res) => {
+const signUp = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     try {
@@ -34,8 +35,8 @@ const signUp = async(req, res) => {
     }
 };
 
-const inviteUser = async(req, res) => {
-    const { name, email, role } = req.body;
+const inviteUser = async (req, res) => {
+    const { name, email, role, techStackId } = req.body;
 
     try {
         // Check if user already exists
@@ -43,24 +44,25 @@ const inviteUser = async(req, res) => {
         if (user) return res.status(400).json({ message: 'User already exists' });
 
         // Generate random 8-character password
-        const plainPassword = crypto.randomBytes(4).toString('hex'); // 8 chars
+        const plainPassword = crypto.randomBytes(4).toString('hex');
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-        // Create new team lead user
+        // Create new user
         user = new User({
             name,
             email,
             password: hashedPassword,
             role,
-            invitedBy: req.user._id
+            invitedBy: req.user._id,
+            techStack: role === 'internee' ? techStackId : undefined
         });
 
-        await user.save();
+        await user.save(); // auto assign the techstack modules
 
-        // Send email with plain password
+        // Send email
         await sendInviteEmail({
-            to: "numanahmedmail@gmail.com",
+            to: email,
             subject: 'Your IIFA Tech Account Credentials',
             name,
             email,
@@ -68,23 +70,22 @@ const inviteUser = async(req, res) => {
             role,
         });
 
-        if (role == 'internee') {
-            // 0 progress
+        // Assign modules & create progress
+        if (role === 'internee') {
+            await assignModulesToTheUser(user._id, techStackId);
             await Progress.create({ userId: user._id });
         }
 
-        user.password = undefined; // Remove password from response
+        user.password = undefined;
 
-        res.status(201).json({
-            user
-        });
+        res.status(201).json({ user });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
 
-const login = async(req, res) => {
+const login = async (req, res) => {
     const { email, password, role } = req.body;
 
     try {
@@ -115,7 +116,7 @@ const logout = (req, res) => {
     res.status(200).json({ message: 'Logout successful' });
 };
 
-const forgotPassword = async(req, res) => {
+const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     try {
@@ -150,7 +151,7 @@ const forgotPassword = async(req, res) => {
 
 };
 
-const verifyOtp = async(req, res) => {
+const verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
 
     try {
@@ -192,7 +193,7 @@ const verifyOtp = async(req, res) => {
     }
 };
 
-const resetPassword = async(req, res) => {
+const resetPassword = async (req, res) => {
     const { email, resetToken, newPassword } = req.body;
 
     try {

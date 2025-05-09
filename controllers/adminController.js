@@ -2,7 +2,7 @@ const cloudinary = require('../config/cloudinary.js');
 const User = require('../models/User');
 const fs = require('fs');
 
-const updateUser = async (req, res) => {
+exports.updateUser = async (req, res) => {
     try {
         const admin = req.user;
         const userId = req.body.userId;
@@ -90,4 +90,30 @@ const updateUser = async (req, res) => {
     }
 };
 
-module.exports = { updateUser }
+// Get all the users
+exports.getAllUsers = async (req, res) => {
+    try {
+        // Fetch all users from the database
+        const users = await User.find();
+
+        // Check if there are no users
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                message: 'No users found',
+            });
+        }
+
+        // Return the list of users
+        return res.status(200).json({
+            message: 'Users retrieved successfully',
+            data: users,
+        });
+    } catch (error) {
+        // Handle any errors during the database query
+        console.error(error);
+        return res.status(500).json({
+            message: 'Server error',
+            error: error.message,
+        });
+    }
+};
